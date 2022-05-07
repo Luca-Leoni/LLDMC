@@ -28,7 +28,7 @@ def expon(x: float) -> float:
 ###############################
 
 
-def pi_estimation_race():
+def pi_estimation_race(save: bool = False):
     n_sample = np.array([100, 1000, 10000, 100000, 200000])
     
     pi_1D    = np.zeros(5)
@@ -51,33 +51,15 @@ def pi_estimation_race():
     ax[0].legend()
     ax[1].legend()
 
-    plt.show()
+    if save:
+        plt.savefig("Results/Images/piRace.png")
+    else:
+        plt.show()
 
 
 ###############################
 #   SECOND EXERCISE
 ###############################
-
-
-def MC_1D_uniform_integration(Function, domain, n_samples: int = 1000000, err: bool = False) -> float:
-    Values = Function(np.random.uniform(domain[0], domain[1], n_samples))
-
-    if err:
-        return (domain[1] - domain[0])*np.mean(Values), (domain[1] - domain[0])*np.std(Values)
-    else:
-        return (domain[1] - domain[0])*np.mean(Values)
-
-
-def MC_1D_integration(Function, domain, prob_dens, n_samples: int = 1000000, err: bool = False) -> float:
-    sampler = LLDMC_CDF_Sampler(prob_dens, domain, 0.001)
-
-    values = Function(sampler.draw_sample(n_samples))
-
-    if err:
-        return sampler.norm_const * np.mean(values), sampler.norm_const * np.std(values)
-    else:
-        return sampler.norm_const * np.mean(values)
-
 
 def integration_race(Function, domain, prob, goal: float, save: bool = False, name: str = "Integration race: Custom vs Uniform"):
     n_samples = np.array([100, 1000, 10000, 100000, 1000000])
@@ -118,8 +100,6 @@ def integration_race(Function, domain, prob, goal: float, save: bool = False, na
 if __name__ == '__main__':
     seed = 63
     np.random.seed(seed)
-
-    # pi_estimation_race()
 
     integration_race(linear, [0, 5], expon, 1 - 6*np.exp(-5), True, "Linear function: Exp vs Uni (" + str(seed) + ")")
     integration_race(quadratic, [0, 5], expon, 2 - 37*np.exp(-5), True, "Quadratic function: Exp vs Uni (" + str(seed) + ")")
