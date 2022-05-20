@@ -9,13 +9,39 @@
 #   DEPENDENCIES
 ###############################
 
-from random import sample
-from src.classes.Sampler import *
+from src.classes.LLMDMC_CDF_Sampler import *
+from src.classes.LLMDMC_MC_Sampler import *
 import numpy as np
 
 ###############################
 #   FUNCTIONS
 ###############################
+
+def simple_integration(Function, domain, delta: float = 1E-4):
+    """
+        description
+        ===========
+        Help function to qiuckly evaluate normalization constant of distributions
+
+        inputs
+        ======
+        Function:       The function needed to integrate
+
+        domain:         array_like object with two entries giving start and end of the domain of integration
+
+        delta:          discretizionation of the domain to use
+    """
+    result   = 0
+    N_bin    = int((domain[1]-domain[0])/delta)
+
+    for i in range(1, N_bin):
+        x0 = domain[0] + delta*(i-1)
+        x1 = domain[0] + delta*i
+
+        result += 0.5*(Function(x0) + Function(x1))*delta
+    
+    return result
+
 
 def pi_estimation_1D_integration(n_points: int, error: bool = False) -> float:
     """
@@ -67,19 +93,22 @@ def MC_1D_uniform_integration(Function, domain, n_samples: int = 1000000, err: b
         inputs
         ======
         Function:       The function needed to integrate
+
         domain:         array_like object with two entries giving start and end of the domain of integration
+
         n_samples:      samples to draw in order to perform the mean which gives the integral value
+
         err:            True if you want the standard deviation to be evaluated and reported in a tuple
     """
     Values = Function(np.random.uniform(domain[0], domain[1], n_samples))
 
     if err:
-        return (domain[1] - domain[0])*np.mean(Values), (domain[1] - domain[0])*np.std(Values)
+        return (domain[1] - domain[0])*np.mean(Values), (domain[1] - domain[0])*np.std(Values)/np.sqrt(n_samples)
     else:
         return (domain[1] - domain[0])*np.mean(Values)
 
 
-def MC_1D_integration(Function, domain, prob_dens, n_samples: int = 1000000, err: bool = False) -> float:
+def MC_1D_integration(Function, domain, prob_dens, n_samples: int = 1000000, err: bool = False, markov_chain: bool = False, n_division: int = 100) -> float:
     """
         description
         ===========
@@ -88,16 +117,40 @@ def MC_1D_integration(Function, domain, prob_dens, n_samples: int = 1000000, err
         inputs
         ======
         Function:       The function needed to integrate
+
         domain:         array_like object with two entries giving start and end of the domain of integration
+
         prob_dens:      function that will get transformed into a prob_dens through CDF algorithm
+
         n_samples:      samples to draw in order to perform the mean which gives the integral value
+
         err:            True if you want the standard deviation to be evaluated and reported in a tuple
     """
-    sampler = LLDMC_CDF_Sampler(prob_dens, domain, 0.001)
+    #---Setup variables---
+    result = 0
 
-    values = Function(sampler.draw_sample(n_samples))
-
-    if err:
-        return sampler.norm_const * np.mean(values), sampler.norm_const * np.std(values)
+    if markov_chain:
+        sampler = LLDMC_MC_Sampler(prob_dens, domain, 0.001)
     else:
-        return sampler.norm_const * np.mean(values)
+        sampler = LLDMC_CDF_Sampler(prob_dens, domain, 0.001)
+
+    #---Random sampling---
+    for i in range(int(n_samples/n_division)):
+        result += np.sum(Function(sampler.draw_sample(n_division)))
+
+    if n_samples % n_division != 0:
+        result += np.sum(Function(sampler.draw_sample(n_samples % n_division)))
+
+    #---Selction of normalization constant---
+    if markov_chain:
+        norm_const = simple_integration(prob_dens, domain)
+    else:
+        norm_const = sampler.norm_const
+
+    #---OUTPUT---
+    if not err:
+        return result*norm_const/n_samples
+    else:
+        result = result*norm_const/n_samples
+
+        return result, np.sqrt(np.abs(MC_1D_integration(lambda x: Function(x)**2, domain, prob_dens, n_samples, err=False, markov_chain=markov_chain) - result**2)/n_samples)

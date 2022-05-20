@@ -2,9 +2,11 @@
 #   DEPENDENCIES
 ###############################
 
+import timeit
 import matplotlib.pyplot as plt
 from src.library.MC_methods import *
-from src.classes.Sampler import *
+from src.classes.LLMDMC_CDF_Sampler import *
+from src.classes.LLMDMC_MC_Sampler import *
 
 ###############################
 #   FUNCTIONS
@@ -61,8 +63,8 @@ def pi_estimation_race(save: bool = False):
 #   SECOND EXERCISE
 ###############################
 
-def integration_race(Function, domain, prob, goal: float, save: bool = False, name: str = "Integration race: Custom vs Uniform"):
-    n_samples = np.array([100, 1000, 10000, 100000, 1000000])
+def CDF_integration_race(Function, domain, prob, goal: float, save: bool = False, name: str = "Integration race: Custom vs Uniform"):
+    n_samples = np.array([1000, 10000, 100000, 300000, 500000])
     res_unif  = []
     res_prob  = []
 
@@ -88,10 +90,45 @@ def integration_race(Function, domain, prob, goal: float, save: bool = False, na
     ax[1].legend()
 
     if save:
-        plt.savefig("Results/Images/" + name + ".png")
+        plt.savefig("Results/CDF/" + name + ".png")
     else:
         plt.show()
 
+
+###############################
+#   THIRD EXERCISE
+###############################
+
+def MC_integration_race(Function, domain, prob, goal: float, save: bool = False, name: str = "Integration race: Custom vs Uniform"):
+    n_samples = np.array([1000, 10000, 100000, 300000, 500000])
+    res_unif  = []
+    res_prob  = []
+
+    for n in n_samples:
+        res_unif.append(MC_1D_uniform_integration(lambda x: Function(x)*prob(x), domain, n_samples=n, err=True))
+        res_prob.append(MC_1D_integration(Function, domain, prob, n_samples=n, err=True, markov_chain=True))
+    
+    res_unif = np.array(res_unif) * (1 - np.exp(-5))
+    res_prob = np.array(res_prob)
+
+    fig, ax = plt.subplots(2,1)
+
+    fig.suptitle(name, fontsize=16)
+
+    ax[0].plot(n_samples, res_unif[:,0], '-o', label="Mean: Unif")
+    ax[0].plot(n_samples, res_prob[:,0], '-o', label="Mean: prob")
+    ax[0].axhline(goal, linestyle='--')
+
+    ax[1].plot(n_samples, res_unif[:,1], '-o', label="Err: Unif")
+    ax[1].plot(n_samples, res_prob[:,1], '-o', label="Err: prob")
+
+    ax[0].legend()
+    ax[1].legend()
+
+    if save:
+        plt.savefig("Results/MarkovChain/" + name + ".png")
+    else:
+        plt.show()
 
 ###############################
 #   MAIN
@@ -101,6 +138,12 @@ if __name__ == '__main__':
     seed = 63
     np.random.seed(seed)
 
-    integration_race(linear, [0, 5], expon, 1 - 6*np.exp(-5), True, "Linear function: Exp vs Uni (" + str(seed) + ")")
-    integration_race(quadratic, [0, 5], expon, 2 - 37*np.exp(-5), True, "Quadratic function: Exp vs Uni (" + str(seed) + ")")
-    integration_race(expon, [0, 5], quadratic, 2 - 37*np.exp(-5), True, "Quadratic function: Qua vs Uni (" + str(seed) + ")")
+    CDF_integration_race(linear, [0, 5], expon, 1 - 6*np.exp(-5), True, "Linear function: Exp vs Uni (" + str(seed) + ")")
+    CDF_integration_race(expon, [0, 5], linear, 1 - 6*np.exp(-5), True, "Linear function: Lin vs Uni (" + str(seed) + ")")
+    CDF_integration_race(quadratic, [0, 5], expon, 2 - 37*np.exp(-5), True, "Quadratic function: Exp vs Uni (" + str(seed) + ")")
+    CDF_integration_race(expon, [0, 5], quadratic, 2 - 37*np.exp(-5), True, "Quadratic function: Qua vs Uni (" + str(seed) + ")")
+
+    MC_integration_race(linear, [0, 5], expon, 1 - 6*np.exp(-5), True, "Linear function: Exp vs Uni (" + str(seed) + ")")
+    MC_integration_race(expon, [0, 5], linear, 1 - 6*np.exp(-5), True, "Linear function: Lin vs Uni (" + str(seed) + ")")
+    MC_integration_race(quadratic, [0, 5], expon, 2 - 37*np.exp(-5), True, "Quadratic function: Exp vs Uni (" + str(seed) + ")")
+    MC_integration_race(expon, [0, 5], quadratic, 2 - 37*np.exp(-5), True, "Quadratic function: Qua vs Uni (" + str(seed) + ")")

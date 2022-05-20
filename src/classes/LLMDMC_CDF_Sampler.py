@@ -1,8 +1,8 @@
 ###############################
 #
-#   Class for generating and 
+#   Classes for generating and 
 #   sampling a general distribution
-#   from a function
+#   from a function using CDF
 #
 ###############################
 
@@ -69,8 +69,6 @@ class LLDMC_CDF_Sampler:
         plt.show()
 
         
-        
-
     def draw_sample(self, size) -> float:
         """
             description
@@ -97,7 +95,7 @@ class LLDMC_CDF_Sampler:
 
             inputs
             ======
-            function:       function to use for the evaluation of the distribution
+            Dunction:       function to use for the evaluation of the distribution
 
             domain:         array with two entries [beg of domain, end of domain]
 
@@ -118,7 +116,7 @@ class LLDMC_CDF_Sampler:
             ======
             domain:         array with two entries [beg of domain, end of domain]
 
-            bin-width:      define the width of the bins for the discretization of the domain
+            bin_width:      define the width of the bins for the discretization of the domain
         """
         n_bins = int((domain[1] - domain[0])/bin_width)
 
