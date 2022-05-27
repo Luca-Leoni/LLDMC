@@ -1,6 +1,6 @@
 ###############################
 #
-#   MC lybrari with the main 
+#   MC lybrary with the main 
 #   functions for the program
 #
 ###############################
@@ -154,3 +154,26 @@ def MC_1D_integration(Function, domain, prob_dens, n_samples: int = 1000000, err
         result = result*norm_const/n_samples
 
         return result, np.sqrt(np.abs(MC_1D_integration(lambda x: Function(x)**2, domain, prob_dens, n_samples, err=False, markov_chain=markov_chain) - result**2)/n_samples)
+
+
+###############################
+#   EXACT SAMPLING METHODS
+###############################
+
+def expo_sampling(x_min: float, x_max: float, alpha: float, size: int = 1):
+    """
+        description
+        ===========
+        exact sampling method to extract random sample from the exponential distribution exp(-alpha*x) in the domain [x_min, x_man]
+
+        inputs
+        ======
+        x_min:          the left delimiter of the domain normalized
+        
+        x_max:          the right delimiter of the domain
+
+        alpha:          constant that multiply at the exponential
+
+        size:           number of samples to be drawn
+    """
+    return x_min - np.log(1 - np.random.uniform(size=size)*(1 - np.exp(-alpha*(x_max - x_min))))*np.power(alpha, -1)

@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from src.library.MC_methods import *
 from src.classes.LLMDMC_CDF_Sampler import *
 from src.classes.LLMDMC_MC_Sampler import *
+from src.classes.LLDMC_two_levels import *
+from Test.Test import *
 
 ###############################
 #   FUNCTIONS
@@ -131,10 +133,10 @@ def MC_integration_race(Function, domain, prob, goal: float, save: bool = False,
         plt.show()
 
 ###############################
-#   MAIN
+#   EXERCISE FUNCTION
 ###############################
 
-if __name__ == '__main__':
+def run_exercises():
     seed = 63
     np.random.seed(seed)
 
@@ -147,3 +149,17 @@ if __name__ == '__main__':
     MC_integration_race(expon, [0, 5], linear, 1 - 6*np.exp(-5), True, "Linear function: Lin vs Uni (" + str(seed) + ")")
     MC_integration_race(quadratic, [0, 5], expon, 2 - 37*np.exp(-5), True, "Quadratic function: Exp vs Uni (" + str(seed) + ")")
     MC_integration_race(expon, [0, 5], quadratic, 2 - 37*np.exp(-5), True, "Quadratic function: Qua vs Uni (" + str(seed) + ")")
+
+###############################
+#   MAIN
+###############################
+
+if __name__ == '__main__':
+
+    prova = LLDMC_two_levels(0.2, 0.5, [0.5, 1.], 3, 1000000)
+
+    prova.write_data('Results/TwoLevels/Try')
+
+    # prova = LLDMC_two_levels(path='Results/TwoLevels/Try')
+
+    prova.plot_magne()

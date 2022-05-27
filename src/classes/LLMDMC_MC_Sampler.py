@@ -20,7 +20,6 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 from scipy import rand
-from sympy import Domain
 
 ###############################
 #

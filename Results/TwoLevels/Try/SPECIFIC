@@ -1,0 +1,7 @@
+# Simulation time:    375.748s       Samples drawn per beta:      2e+06
+# Input parameters:
+       0.2 # h
+       0.5 # G
+       0.5 # beta_min
+         1 # beta_max
+         3 # beta_sampling
