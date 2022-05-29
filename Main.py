@@ -156,10 +156,22 @@ def run_exercises():
 
 if __name__ == '__main__':
 
-    prova = LLDMC_two_levels(0.2, 0.5, [0.5, 1.], 3, 1000000)
+    prova = LLDMC_two_levels(0.2, 0.5, [0.1, 2.], 10, 1000000)
 
-    prova.write_data('Results/TwoLevels/Try')
+    prova.write_data('Results/TwoLevels/BigOneExp2')
 
-    # prova = LLDMC_two_levels(path='Results/TwoLevels/Try')
+    prova.plot_magne(True, name='Exponential2')
 
-    prova.plot_magne()
+    # prova = LLDMC_two_levels(0.2, 0.5, [0.1, 2.], 10, 1000000, True)
+
+    # prova.write_data('Results/TwoLevels/BigOneUni2')
+
+    # prova.plot_magne(True, name='Uniform2')
+
+    # prova = LLDMC_two_levels(path='Results/TwoLevels/BigOneUni')
+
+    # prova.plot_magne(True, name='Uniform')
+
+    # prova = LLDMC_two_levels(path='Results/TwoLevels/BigOne')
+
+    # prova.plot_magne(True, name='Exponential')

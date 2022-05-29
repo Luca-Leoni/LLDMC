@@ -21,10 +21,11 @@ from cProfile import label
 import numpy as np
 import timeit
 import os
-import matplotlib.pyplot as plt
 import gc
 
+from src.library.PLOT_Standard import *
 from src.classes.LLDMC_two_levels_diagram import *
+from src.classes.LLDMC_two_levels_diagram_uni import *
 
 ###############################
 #
@@ -76,7 +77,7 @@ class LLDMC_two_levels:
     #   CONSTRUCTOR
     ###############################
 
-    def __init__(self, h: float = 0, G: float = 0, beta: list = [0, 0], beta_sampling: int = 2, n_sample: int = 1000000, path: str = None) -> None:
+    def __init__(self, h: float = 0, G: float = 0, beta: list = [0, 0], beta_sampling: int = 2, n_sample: int = 1000000, uniform: bool = False, path: str = None) -> None:
         """
             description
             ===========
@@ -96,6 +97,8 @@ class LLDMC_two_levels:
 
             n_sample:           number of sample for the simulation that starts right away
 
+            Uniform:            true if you want to sample the diagram using the uniform distribution scheme and false if you want the exponential
+
             path:               You can simply specify the path to the folder with all information file and use that (in this case doesn't start simulation right away)
         """
         if path != None:
@@ -111,7 +114,7 @@ class LLDMC_two_levels:
             self.up_contribution = np.zeros(beta_sampling)
             self.dw_contribution = np.zeros(beta_sampling)
 
-            self.simulate(n_sample)
+            self.simulate(n_sample, uniform)
 
     ###############################
     #   FUNCTIONS
@@ -119,7 +122,7 @@ class LLDMC_two_levels:
 
     #----------MAIN----------
 
-    def simulate(self, n_sample = 1000000):
+    def simulate(self, n_sample = 1000000, uniform: bool = False):
         """
             description
             ===========
@@ -128,17 +131,23 @@ class LLDMC_two_levels:
             inputs
             ======
             n_sample:       number of samples to be drawn for every up and dw contribution 
+
+            Uniform:        true if you want to sample the diagram using the uniform distribution scheme and false if you want the exponential
         """
         self.simulation_time = timeit.default_timer()
         print("Starting simulation...\n")
 
         for i, beta in enumerate(self.beta):
-            self.up_diagram = LLDMC_two_levels_diagram(1, self.h, self.G, beta)
-            self.dw_diagram = LLDMC_two_levels_diagram(-1, self.h, self.G, beta)
+            if uniform:
+                self.up_diagram = LLDMC_two_levels_diagram_uni(1, self.h, self.G, beta)
+                self.dw_diagram = LLDMC_two_levels_diagram_uni(-1, self.h, self.G, beta)
+            else:
+                self.up_diagram = LLDMC_two_levels_diagram(1, self.h, self.G, beta)
+                self.dw_diagram = LLDMC_two_levels_diagram(-1, self.h, self.G, beta)
 
             gc.collect()
 
-            print("Simulation for beta: {:10n}      time up to now: {:10n}s".format(beta, timeit.default_timer()-self.simulation_time))
+            print("Start simulation for beta: {:10n}      time up to now: {:10n}s".format(beta, timeit.default_timer()-self.simulation_time))
 
             for j in range(n_sample):
                 self.up_diagram.MC_step()
@@ -301,18 +310,23 @@ class LLDMC_two_levels:
         self.dw_contribution = data[:,1]
 
 
-    def plot_magne(self):
-        plt.plot(self.beta, self.z_magne, label='z: computed')
-        plt.plot(self.beta, analytic_solution_z_magne(self.h, self.G, self.beta), label='z: analytic')
+    def plot_magne(self, Save: bool = False, path: str = 'Results/TwoLevels/Images',name: str = 'Magentization_plot'):
+        """
+            description
+            ===========
+            function to plot the resulting magnetization in a nicely done plot. 
+            In particular two windows will be oppened, since in the first one the cosmetics changes do not get rendered due to a bug.
 
-        plt.legend()
-        plt.show()
+            inputs
+            ======
+            Save:               true if you want to save the plot into a png instead of getting rendered
 
-        plt.plot(self.beta, self.x_magne, label='x: computed')
-        plt.plot(self.beta, analytic_solution_x_magne(self.h, self.G, self.beta), label='x: analytic')
+            path:               path of the folder where to save the plots in case save is activated
 
-        plt.legend()
-        plt.show()
+            name:               nameo of the file in which to save the plot
+        """
+        self.__plot_magne(False)
+        self.__plot_magne(Save=Save, path=path, name=name)
 
     
     #----------PRIVATE----------
@@ -326,3 +340,34 @@ class LLDMC_two_levels:
     #     file = open(file, 'w')
     #     file.write('# Input parameters:   h = {:10n}   G = {:10n}'.format(self.h, self.G))
     #     file.write('# Simulation time: {:10n}       Samples drawn per beta: {:10n}'.format(self.simulation_time, np.sum(self.order[0])))
+
+    def __plot_magne(self, Save: bool = False, LabelSize: int = 30, MarkerSize: int = 13, LegendSize: int = 30, LineWidth: int = 4, path: str = 'Results/TwoLevels/Images', name: str = 'Magentization_plot'):
+        """
+            description
+            ===========
+            function to plot the magnetization in a precise style, needs to be called two times due to some bugs that doesn't allow to display the right cosmetics at the first rendering.
+        """
+        fig, ax = createPlot(1, 1, sizeX=15, sizeY=10, TickYsize=24, TickXsize=24)
+
+        ax.set_xlabel(r"$\beta$", fontsize=LabelSize)
+        ax.set_ylabel(r"magentization", fontsize=LabelSize)
+
+        #---LaTeX---
+        plt.rc('text', usetex=True)
+        plt.rc('text.latex', preamble=r'\usepackage[italic,eulergreek]{mathastext}\usepackage{amsmath}')
+
+        #---plotto---
+
+        ax.plot(self.beta, self.z_magne, '^', label=r"$m_z$ computed", color='darkred', markersize=MarkerSize)
+        ax.plot(self.beta, self.x_magne, 'v', label=r"$m_x$ computed", color='blue', markersize=MarkerSize)
+
+        ax.plot(self.beta, analytic_solution_z_magne(self.h, self.G, self.beta), '--', label=r"$m_z$ analytic", color='red', markersize=MarkerSize)
+        ax.plot(self.beta, analytic_solution_x_magne(self.h, self.G, self.beta), '--', label=r"$m_x$ analytic", color='cyan', markersize=MarkerSize)
+
+        legend = ax.legend(markerscale=1, fontsize=LegendSize, loc='best', prop={"size":LegendSize})
+        plt.setp(legend.get_title(),fontsize=LegendSize)
+
+        if Save:
+            plt.savefig(path + '/' + name + '.png')
+        else:
+            plt.show()

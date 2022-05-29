@@ -17,6 +17,7 @@
 #
 ###############################
 
+from hashlib import new
 from operator import index
 from os import times
 import random
@@ -35,7 +36,7 @@ from src.library.MC_methods import expo_sampling
 #
 ###############################
 
-class LLDMC_two_levels_diagram:
+class LLDMC_two_levels_diagram_uni:
     """
         Rappresents one of the two contributions inside the general integral form of Z in a two level system, up propagation or down propagation
     """
@@ -128,11 +129,11 @@ class LLDMC_two_levels_diagram:
         spin_segment    = self.spins[draw_indx]
 
         # sample the position of the first vertex
-        time1 = expo_sampling(0, old_lenght, spin_segment*self.h)                       # drawing start of new segment
-        new_lenght = expo_sampling(0, old_lenght - time1, -spin_segment*self.h)         # drawing lenghts of new segment
+        time1 = np.random.uniform(0, old_lenght)                       # drawing start of new segment
+        new_lenght = np.random.uniform(0, old_lenght - time1)         # drawing lenghts of new segment
 
         # transition probability (remember n. vertices = n. segments - 1)
-        acc_prob = self.G*self.G*np.exp(spin_segment*self.h*(new_lenght + time1))*n_segments/(n_segments + 1)
+        acc_prob = self.G*self.G*old_lenght*(old_lenght - time1)*np.exp(spin_segment*self.h*2*new_lenght)*n_segments/(n_segments + 1)
 
         # Hasting algorithm
         if acc_prob > 1:
@@ -167,13 +168,14 @@ class LLDMC_two_levels_diagram:
         # select the segment of interest
         n_segments      = np.size(self.lenghts)
         select          = random.randint(1, n_segments-2)
+        new_lenght      = self.lenghts[select] + self.lenghts[select-1] + self.lenghts[select+1]
 
         # transition probability (remember n. vertices = n. segments - 1)
-        acc_prob = np.exp(self.spins[select]*self.h*(self.lenghts[select] + self.lenghts[select - 1]))*n_segments/((n_segments - 1)*self.G*self.G)
+        acc_prob = self.G*self.G*np.exp(self.spins[select]*self.h*2*self.lenghts[select])*n_segments/((n_segments - 1)*new_lenght*(new_lenght - self.lenghts[select-1]))
 
         # Hasting algorithm
         if acc_prob > 1:
-            self.lenghts[select-1] = self.lenghts[select] + self.lenghts[select-1] + self.lenghts[select+1]
+            self.lenghts[select-1] = new_lenght
 
             self.lenghts = np.delete(self.lenghts, select)
             self.lenghts = np.delete(self.lenghts, select)
@@ -183,7 +185,7 @@ class LLDMC_two_levels_diagram:
             self.order -= 2
         else: 
             if np.random.uniform() < acc_prob:
-                self.lenghts[select-1] = self.lenghts[select] + self.lenghts[select-1] + self.lenghts[select+1]
+                self.lenghts[select-1] = new_lenght
 
                 self.lenghts = np.delete(self.lenghts, select)
                 self.lenghts = np.delete(self.lenghts, select)
